@@ -6,7 +6,10 @@ udpSocket.bind(2053, "127.0.0.1");
 udpSocket.on("message", (buf, rinfo) => {
   try {
     const message = new DNSmessage(); //create new class instance for message
-    const response = Buffer.from(message.createDNSheader());
+    const header = message.createDNSheader();
+    const question = message.createDNSquestion();
+
+    const response = Buffer.concat([header, question]);
     udpSocket.send(response, rinfo.port, rinfo.address);
   } catch (e) {
     console.log(`Error receiving data: ${e}`);
@@ -25,6 +28,7 @@ udpSocket.on("listening", () => {
 class DNSmessage {
   constructor() {
     this.header = this.createDNSheader();
+    this.question = this.createDNSquestion();
   }
 
   createDNSheader() {
@@ -36,5 +40,18 @@ class DNSmessage {
     header.writeUInt16BE(0, 8); // NSCOUNT: 0
     header.writeUInt16BE(0, 10); // ARCOUNT: 0
     return header;
+  }
+
+  createDNSquestion() {
+    const domain = Buffer.from(`\x0ccodecrafters\x02io\x00`);
+    const type = Buffer.alloc(2);
+    type.writeUInt16BE(1, 0);
+    const cls = Buffer.alloc(2);
+    cls.writeUInt16BE(1, 0);
+
+    const question = Buffer.concat(
+      [domain, type, cls]
+    );
+    return question;
   }
 }
