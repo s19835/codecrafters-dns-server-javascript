@@ -17,7 +17,7 @@ udpSocket.on("message", (buf, rinfo) => {
       answer 
     ]);
     
-    
+ 
     udpSocket.send(response, rinfo.port, rinfo.address);
   } catch (e) {
     console.log(`Error receiving data: ${e}`);
@@ -45,7 +45,7 @@ class DNSmessage {
   createDNSheader() {
     const header = Buffer.alloc(12); //DNS header 12 byte long
     header.writeUInt16BE(this.reciverMessage["ID"], 0); //Transaction ID
-
+    
     //assigning new values to flags
     this.reciverFlag["QR"] = 1;
     this.reciverFlag["AA"] = 0;
@@ -65,22 +65,21 @@ class DNSmessage {
   }
 
   createDNSquestion() {
-
+    const domain = Buffer.from(`\x0ccodecrafters\x02io\x00`);
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
     const cls = Buffer.alloc(2);
     cls.writeUInt16BE(1, 0);
 
     const question = Buffer.concat(
-      [this.domain, type, cls]
+      [domain, type, cls]
     );
 
     return question;
   }
 
   createDNSanswer() {
-
-    
+    const domain = Buffer.from(`\x0ccodecrafters\x02io\x00`);
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
     
@@ -96,9 +95,9 @@ class DNSmessage {
     const data = Buffer.alloc(4);
     data.writeUInt32BE(`\x08\x08\x08\x08`);
 
-
+    console.log(data.toString());
     const answer = Buffer.concat(
-      [ this.domain, type, cls, ttl, length, data ]
+      [ domain, type, cls, ttl, length, data ]
     );
 
     return answer;
@@ -132,30 +131,6 @@ class DNSmessage {
   }
 
   getDomain() {
-    const parts = [];
-    let offset = 12; // DNS header is 12 bytes
-
-    while (true) {
-        const length = this.buffer.readUInt8(offset++); // Read the length of the next label
-        if (length === 0) break; // End of the domain name
-        const label = this.buffer.toString('utf-8', offset, offset + length);
-        parts.push(label);
-        offset += length;
-    }
-
-    function getLabelLength(string) {
-      let length = string.length;
-      length = 'x\\' + length.toString(16).padStart(2, '0');
-      return Buffer.from(length);
-    }
-    const domain = Buffer.concat([
-      getLabelLength(parts[0]),
-      Buffer.from(parts[0]),
-      getLabelLength(parts[1]),
-      Buffer.from(parts[1]),
-      Buffer.from([0x00])
-    ]);
-
-    return domain;
+    
   }
 }
