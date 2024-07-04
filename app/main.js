@@ -17,7 +17,7 @@ udpSocket.on("message", (buf, rinfo) => {
       answer 
     ]);
     
-    
+    console.log(response)
     udpSocket.send(response, rinfo.port, rinfo.address);
   } catch (e) {
     console.log(`Error receiving data: ${e}`);
@@ -39,6 +39,7 @@ class DNSmessage {
     if (buffer instanceof Buffer) this.buffer = buffer;
     this.reciverMessage = this.parseHeader()["message"];
     this.reciverFlag = this.parseHeader()["flag"];
+    this.domain = this.getDomain();
   }
 
   createDNSheader() {
@@ -64,21 +65,21 @@ class DNSmessage {
   }
 
   createDNSquestion() {
-    const domain = Buffer.from(`\x0ccodecrafters\x02io\x00`);
+
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
     const cls = Buffer.alloc(2);
     cls.writeUInt16BE(1, 0);
 
     const question = Buffer.concat(
-      [domain, type, cls]
+      [this.domain, type, cls]
     );
 
     return question;
   }
 
   createDNSanswer() {
-    const domain = Buffer.from(`\x0ccodecrafters\x02io\x00`);
+
     
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
@@ -97,7 +98,7 @@ class DNSmessage {
 
 
     const answer = Buffer.concat(
-      [ domain, type, cls, ttl, length, data ]
+      [ this.domain, type, cls, ttl, length, data ]
     );
 
     return answer;
@@ -130,4 +131,31 @@ class DNSmessage {
 
   }
 
+  getDomain() {
+    const parts = [];
+    let offset = 12; // DNS header is 12 bytes
+
+    while (true) {
+        const length = this.buffer.readUInt8(offset++); // Read the length of the next label
+        if (length === 0) break; // End of the domain name
+        const label = this.buffer.toString('utf-8', offset, offset + length);
+        parts.push(label);
+        offset += length;
+    }
+
+    function getLabelLength(string) {
+      let length = string.length;
+      length = 'x\\' + length.toString(16).padStart(2, '0');
+      return Buffer.from(length);
+    }
+    const domain = Buffer.concat([
+      getLabelLength(parts[0]),
+      Buffer.from(parts[0]),
+      getLabelLength(parts[1]),
+      Buffer.from(parts[1]),
+      Buffer.from([0x00])
+    ]);
+
+    return domain;
+  }
 }
