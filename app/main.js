@@ -6,7 +6,6 @@ udpSocket.bind(2053, "127.0.0.1");
 udpSocket.on("message", (buf, rinfo) => {
   try {
     const message = new DNSmessage(buf); //create new class instance for message
-    message.getDomain();
     const header = message.createDNSheader();
     const question = message.createDNSquestion();
     const answer = message.createDNSanswer();
@@ -18,7 +17,7 @@ udpSocket.on("message", (buf, rinfo) => {
     ]);
     
  
-    // udpSocket.send(response, rinfo.port, rinfo.address);
+    udpSocket.send(response, rinfo.port, rinfo.address);
   } catch (e) {
     console.log(`Error receiving data: ${e}`);
   }
@@ -66,7 +65,7 @@ class DNSmessage {
   }
 
   createDNSquestion() {
-    const domain = this.formatDomain;
+    const domain = this.formatedDomain;
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
     const cls = Buffer.alloc(2);
@@ -80,7 +79,7 @@ class DNSmessage {
   }
 
   createDNSanswer() {
-    const domain = this.formatDomain;
+    const domain = this.formatedDomain;
 
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
@@ -156,8 +155,7 @@ class DNSmessage {
 
 
   formatDomain() {
-    const domainName = this.domain;
-    const domainParts = domainName.split('.');
+    const domainParts = this.domain.split('.');
 
     function getLabelLength(string) {
         return Buffer.from([string.length]);
