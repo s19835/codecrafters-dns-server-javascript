@@ -6,7 +6,7 @@ udpSocket.bind(2053, "127.0.0.1");
 udpSocket.on("message", (buf, rinfo) => {
   try {
     const message = new DNSmessage(buf); //create new class instance for message
-    
+    message.getDomain();
     const header = message.createDNSheader();
     const question = message.createDNSquestion();
     const answer = message.createDNSanswer();
@@ -18,7 +18,7 @@ udpSocket.on("message", (buf, rinfo) => {
     ]);
     
  
-    udpSocket.send(response, rinfo.port, rinfo.address);
+    // udpSocket.send(response, rinfo.port, rinfo.address);
   } catch (e) {
     console.log(`Error receiving data: ${e}`);
   }
@@ -40,6 +40,7 @@ class DNSmessage {
     this.reciverMessage = this.parseHeader()["message"];
     this.reciverFlag = this.parseHeader()["flag"];
     this.domain = this.getDomain();
+    this.formatedDomain = this.formatDomain();
   }
 
   createDNSheader() {
@@ -65,7 +66,7 @@ class DNSmessage {
   }
 
   createDNSquestion() {
-    const domain = Buffer.from(`\x0ccodecrafters\x02io\x00`);
+    const domain = this.formatDomain;
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
     const cls = Buffer.alloc(2);
@@ -79,7 +80,8 @@ class DNSmessage {
   }
 
   createDNSanswer() {
-    const domain = Buffer.from(`\x0ccodecrafters\x02io\x00`);
+    const domain = this.formatDomain;
+
     const type = Buffer.alloc(2);
     type.writeUInt16BE(1, 0);
     
@@ -131,6 +133,45 @@ class DNSmessage {
   }
 
   getDomain() {
-    
+    const arrayBuffer = this.buffer.buffer.slice(this.buffer.byteOffset, this.buffer.byteOffset + this.buffer.byteLength);
+    const view = new DataView(arrayBuffer);
+    const parts = [];
+    let offset = 12; // DNS header is 12 bytes
+
+    while (true) {
+        const length = view.getUint8(offset++); // Read the length of the next label
+        
+        if (length === 0) break; // End of the domain name
+        const label = [];
+
+        for (let i = 0; i < length; i++) {
+            label.push(String.fromCharCode(view.getUint8(offset++)));
+        }
+       
+        parts.push(label.join(""));
+    }
+
+    return parts.join(".");
+  }
+
+
+  formatDomain() {
+    const domainName = this.domain;
+    const domainParts = domainName.split('.');
+
+    function getLabelLength(string) {
+        return Buffer.from([string.length]);
+    }
+
+    // Create domain name in DNS answer format
+    const domain = Buffer.concat(
+        domainParts.reduce((acc, part) => {
+            acc.push(getLabelLength(part)); // Length-prefixed label
+            acc.push(Buffer.from(part)); // Actual label
+            return acc;
+        }, []).concat([Buffer.from([0x00])]) // End of domain name
+    );
+
+    return domain;
   }
 }
