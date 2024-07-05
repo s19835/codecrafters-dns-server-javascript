@@ -1,5 +1,5 @@
 import dgram from "dgram";
-import DNSmessage from "./DNSmessage";
+import DNSmessage from "./DNSmessage.js";
 
 const udpSocket = dgram.createSocket("udp4");
 udpSocket.bind(2053, "127.0.0.1");
