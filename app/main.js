@@ -10,7 +10,7 @@ udpSocket.on("message", (buf, rinfo) => {
     const header = message.createDNSheader();
     const question = message.createDNSquestion();
     const answer = message.createDNSanswer();
-    
+
     const response = Buffer.concat([ 
       header, 
       question, 

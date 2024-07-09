@@ -102,11 +102,22 @@ export default class DNSmessage {
       const view = new DataView(arrayBuffer);
       const parts = [];
       let offset = 12; // DNS header is 12 bytes
+
+      
+      //search pointers in length
+      const POINTER_MASK = 0b11000000;
   
       while (true) {
           const length = view.getUint8(offset++); // Read the length of the next label
           
           if (length === 0) break; // End of the domain name
+
+          if (length & POINTER_MASK) {
+            const pointer = (length & ~POINTER_MASK) << 8 | view.getUint8(offset++); //create pointer address by shifting
+            offset = pointer;
+            continue;
+          }
+
           const label = [];
   
           for (let i = 0; i < length; i++) {
@@ -137,13 +148,6 @@ export default class DNSmessage {
       );
   
       return domain;
-    }
-  
-    parseQuestion() {
-      
-  
-  
-  
     }
   
   }
