@@ -6,18 +6,13 @@ udpSocket.bind(2053, "127.0.0.1");
 
 udpSocket.on("message", (buf, rinfo) => {
   try {
-    const message = new DNSmessage(buf); //create new class instance for message
+    const message = new DNSmessage(buf);
     const header = message.createDNSheader();
     const question = message.createDNSquestion();
     const answer = message.createDNSanswer();
 
-    const response = Buffer.concat([ 
-      header, 
-      question, 
-      answer 
-    ]);
-    
- 
+    const response = Buffer.concat([header, question, answer]);
+
     udpSocket.send(response, rinfo.port, rinfo.address);
   } catch (e) {
     console.log(`Error receiving data: ${e}`);
@@ -32,4 +27,3 @@ udpSocket.on("listening", () => {
   const address = udpSocket.address();
   console.log(`Server listening ${address.address}:${address.port}`);
 });
-
